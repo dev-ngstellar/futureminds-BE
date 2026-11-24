@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id       String @id @default(uuid())
+  email    String @unique
+  password String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Registration {
+  id     String  @id @default(uuid())
+  userId String? @unique
+
+  referenceNumber String?
+  name           String
+  email          String
+  gender         String
+  dateOfBirth    DateTime
+  age            Int
+  presentAddress String
+  mobileNumber   String
+  medicalHistory String?
+  tshirtSize     String
+  raceCategory   String
+  state          String
+  city           String
+  pincode        String
+
+  emergencyContactName   String
+  emergencyContactMobile String
+  waiverAccepted         Boolean
+
+  amount Float
+
+  paymentStatus     String  @default("PENDING")
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String?
+  ticketId          String? @unique
+  emailSent         Boolean @default(false)
+  finalRegistration Boolean @default(false)
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id String @id @default(uuid())
+
+  registrationId String
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  gateway String @default("RAZORPAY")
+  method  String @default("UNKNOWN")
+  status  String @default("PENDING")
+
+  razorpayOrderId   String
+  razorpayPaymentId String?
+  razorpaySignature String?
+
+  amount   Float
+  currency String @default("INR")
+
+  verified      Boolean @default(false)
+  webhookEvent  String?
+  failureReason String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  webhooks  Webhook[]
+
+  @@index([razorpayOrderId])
+  @@index([razorpayPaymentId])
+}
+
+model Webhook {
+  id String @id @default(uuid())
+
+  event     String
+  eventId   String?
+  signature String
+
+  verified  Boolean @default(false)
+  processed Boolean @default(false)
+
+  payload Json
+  headers Json?
+
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  processingError String?
+  createdAt       DateTime @default(now())
+
+  @@index([event])
+  @@index([razorpayOrderId])
+  @@index([razorpayPaymentId])
+}
