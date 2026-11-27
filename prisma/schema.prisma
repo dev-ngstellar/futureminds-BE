@@ -34,9 +34,10 @@ model Registration {
   city           String
   pincode        String
 
-  emergencyContactName   String
-  emergencyContactMobile String
-  waiverAccepted         Boolean
+  emergencyContactName         String
+  emergencyContactMobile       String
+  emergencyContactRelationship String? @default("Father")
+  waiverAccepted               Boolean
 
   amount Float
 

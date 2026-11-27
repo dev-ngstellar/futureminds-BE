@@ -58,6 +58,10 @@ export class RegistrationMapper {
             updated.emergencyContactMobile =
                 dto.emergencyContactMobile;
 
+        if (dto.emergencyContactRelationship !== undefined)
+            updated.emergencyContactRelationship =
+                dto.emergencyContactRelationship;
+
         if (dto.waiverAccepted !== undefined)
             updated.waiverAccepted = dto.waiverAccepted;
 

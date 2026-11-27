@@ -105,6 +105,8 @@ export class RegistrationService {
             const reg = await this.registrationRepository.getById(id);
             if (!reg) return null;
 
+            const isPaid = reg.finalRegistration === true && reg.paymentStatus === 'PAID';
+
             return {
                 id: reg.id,
                 referenceNumber: reg.referenceNumber,
@@ -116,6 +118,11 @@ export class RegistrationService {
                 finalRegistration: reg.finalRegistration,
                 emailSent: reg.emailSent,
                 createdAt: reg.createdAt,
+                emergencyContactRelationship: (reg as any).emergencyContactRelationship || null,
+                contactPerson: {
+                    name: 'Dr. Ramesh Nivash, BE, MBA, MA, MSc',
+                    mobile: isPaid ? (process.env.MARATHON_CONTACT_MOBILE || '+91 94441 23456') : null,
+                },
             };
         } catch (error) {
             this.logger.error(
@@ -248,39 +255,88 @@ export class RegistrationService {
         this.logger.log(`Creating registration for ${dto.email}`);
 
         try {
-            // const emailExists =
-            //     await this.registrationRepository.existsByEmail(dto.email);
-            // if (emailExists) {
-            //     throw new HttpException(
-            //         ErrorMessages[ErrorCode.REGISTRATION_EMAIL_EXISTS],
-            //         HttpStatus.CONFLICT,
-            //     );
-            // }
-
-            // const mobileExists =
-            //     await this.registrationRepository.existsByMobile(
-            //         dto.mobileNumber,
-            //     );
-            // if (mobileExists) {
-            //     throw new HttpException(
-            //         ErrorMessages[ErrorCode.REGISTRATION_MOBILE_EXISTS],
-            //         HttpStatus.CONFLICT,
-            //     );
-            // }
-
+            // 1. Authoritative Category and Pricing Validation
             const category = this.normalizeRaceCategory(dto.raceCategory);
+            if (!category.amount || category.amount <= 0) {
+                throw new HttpException(
+                    'Invalid or unrecognized race category',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
 
-            // referenceNumber is set only after payment success in finalizeRegistration
-            const registration =
-                await this.registrationRepository.create({
-                    ...dto,
-                    amount: category.amount,
-                    raceCategory: category.dbValue,
-                    dateOfBirth: new Date(dto.dateOfBirth),
-                    paymentStatus: 'PENDING',
-                    razorpayOrderId: null,
-                    emailSent: false,
-                } as any)
+            // 2. Normalize and Trim Text Inputs
+            const trimmedName = dto.name.trim();
+            const trimmedEmail = dto.email.trim().toLowerCase();
+            const cleanMobile = dto.mobileNumber.replace(/\D/g, '');
+            const cleanEmergencyMobile = dto.emergencyContactMobile.replace(/\D/g, '');
+            const trimmedAddress = dto.presentAddress.trim();
+            const trimmedCity = dto.city.trim();
+            const trimmedState = dto.state.trim();
+            const cleanPincode = dto.pincode.replace(/\D/g, '');
+            const trimmedEmergencyName = dto.emergencyContactName.trim();
+            const medicalHistory = (dto.medicalHistory || 'None').trim();
+
+            // 3. Mobile Distinction Check
+            if (cleanMobile === cleanEmergencyMobile) {
+                throw new HttpException(
+                    'Emergency contact mobile cannot be the same as the participant mobile number',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+
+            // 4. Date of Birth and Age Validation
+            const dob = new Date(dto.dateOfBirth);
+            if (isNaN(dob.getTime())) {
+                throw new HttpException('Invalid date of birth provided', HttpStatus.BAD_REQUEST);
+            }
+            const now = new Date();
+            if (dob > now) {
+                throw new HttpException('Date of birth cannot be in the future', HttpStatus.BAD_REQUEST);
+            }
+
+            let calculatedAge = now.getFullYear() - dob.getFullYear();
+            const monthDiff = now.getMonth() - dob.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+                calculatedAge--;
+            }
+
+            if (calculatedAge < 3) {
+                throw new HttpException('Participant must be at least 3 years old', HttpStatus.BAD_REQUEST);
+            }
+            if (calculatedAge > 100) {
+                throw new HttpException('Participant age cannot exceed 100 years', HttpStatus.BAD_REQUEST);
+            }
+
+            // 5. Waiver Verification
+            if (dto.waiverAccepted !== true) {
+                throw new HttpException('Safety waiver and declaration must be accepted', HttpStatus.BAD_REQUEST);
+            }
+
+            // 6. Create registration with server-authoritative amount & normalized fields
+            const registration = await this.registrationRepository.create({
+                name: trimmedName,
+                email: trimmedEmail,
+                mobileNumber: cleanMobile,
+                emergencyContactMobile: cleanEmergencyMobile,
+                gender: dto.gender,
+                dateOfBirth: dob,
+                age: calculatedAge,
+                presentAddress: trimmedAddress,
+                city: trimmedCity,
+                state: trimmedState,
+                pincode: cleanPincode,
+                tshirtSize: dto.tshirtSize,
+                emergencyContactName: trimmedEmergencyName,
+                emergencyContactRelationship: dto.emergencyContactRelationship || 'Father',
+                medicalHistory: medicalHistory,
+                amount: category.amount,
+                raceCategory: category.dbValue,
+                paymentStatus: 'PENDING',
+                razorpayOrderId: null,
+                emailSent: false,
+                waiverAccepted: true,
+                userId: dto.userId || null,
+            } as any);
 
             return {
                 ...registration,
@@ -383,7 +439,7 @@ export class RegistrationService {
                         finalResult.registration.referenceNumber,
                         finalResult.registration.amount.toString(),
                         {
-                            name: '3rd Edition Ayyappanthangal Marathon',
+                            name: 'Future Minds Foundation Marathon',
                             venue: 'Ayyappanthangal, Chennai',
                             date: 'Sunday, 14 February 2027',
                             category: formattedCategory,
@@ -488,7 +544,7 @@ export class RegistrationService {
                         finalResult.registration.referenceNumber,
                         finalResult.registration.amount.toString(),
                         {
-                            name: '3rd Edition Ayyappanthangal Marathon',
+                            name: 'Future Minds Foundation Marathon',
                             venue: 'Ayyappanthangal, Chennai',
                             date: 'Sunday, 14 February 2027',
                             category: formattedCategory,

@@ -235,6 +235,10 @@ export class PaymentService {
             paymentStatus: registration.paymentStatus,
             registrationId: registration.id,
             newlyFinalized,
+            contactPerson: {
+                name: 'Dr. Ramesh Nivash, BE, MBA, MA, MSc',
+                mobile: process.env.MARATHON_CONTACT_MOBILE || '+91 94441 23456',
+            },
         };
     }
 

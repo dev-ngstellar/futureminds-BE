@@ -24,6 +24,7 @@ export class Registration {
 
     emergencyContactName: string;
     emergencyContactMobile: string;
+    emergencyContactRelationship?: string;
     waiverAccepted: boolean;
 
     amount: number;

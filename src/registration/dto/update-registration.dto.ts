@@ -8,7 +8,7 @@ import {
   IsDateString,
   Length,
 } from 'class-validator';
-import { Gender, RaceCategory } from './registration.dto';
+import { Gender, RaceCategory, TshirtSize, EmergencyContactRelationship } from './registration.dto';
 
 export class UpdateRegistrationDto {
   @IsString()
@@ -56,7 +56,7 @@ export class UpdateRegistrationDto {
   @IsOptional()
   medicalHistory?: string;
 
-  @IsString()
+  @IsEnum(TshirtSize)
   @IsOptional()
   tshirtSize?: string;
 
@@ -71,6 +71,10 @@ export class UpdateRegistrationDto {
   @IsString()
   @IsOptional()
   emergencyContactMobile?: string;
+
+  @IsEnum(EmergencyContactRelationship)
+  @IsOptional()
+  emergencyContactRelationship?: EmergencyContactRelationship;
 
   @IsBoolean()
   @IsOptional()

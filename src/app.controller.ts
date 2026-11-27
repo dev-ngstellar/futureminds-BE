@@ -6,7 +6,7 @@ export class AppController {
     getHealth() {
         return {
             status: 'ok',
-            message: 'Ayyapanthangal Marathon 2026 Backend API',
+            message: 'Future Minds Foundation Marathon Backend API',
             timestamp: new Date().toISOString(),
             version: '1.0.0',
         };
@@ -21,20 +21,20 @@ export class AppController {
         };
     }
 
-    // ✅ DYNAMIC MARATHON 3RD EDITION EVENT METADATA
+    // ✅ DYNAMIC MARATHON EVENT METADATA
     @Get('marathon/config')
     getMarathonConfig() {
         return {
             status: 'ok',
             data: {
-                edition: 3,
-                title: '3rd Edition Ayyappanthangal Marathon',
+                title: 'Future Minds Foundation Marathon',
                 organizer: 'Future Minds Foundation',
                 eventDate: '2027-02-14T05:30:00.000Z',
                 eventDateFormatted: 'Sunday, 14 February 2027',
                 venue: 'Ayyappanthangal, Chennai',
                 reportingTime: '05:00 AM',
                 isRegistrationOpen: true,
+                contactPerson: 'Dr. Ramesh Nivash, BE, MBA, MA, MSc',
                 categories: [
                     {
                         code: '1.5 KM',
